@@ -16,7 +16,6 @@ public class ServerMaster {
     private int playerNum;
     private int downedPlayersNum;
     private static ServerMaster singleInstance = null;
-    private int bossHPPercent;
 
     private ServerMaster(){
         playerNum = 0;
@@ -69,28 +68,18 @@ public class ServerMaster {
                 }
                 handleDownsAndRevives(player);
             }
-            else if (entity instanceof Enemy enemy){
-                if (enemy.getIsBoss()) bossHPPercent = (int) (((double)enemy.getHitPoints()/enemy.getMaxHealth())*100);
-                if (enemy.getHitPoints() <= 0){
-                    //Trigger death animation;
-                    //Give reward xp to the player who took the last hit
-                    for (Entity e:entities){
-                        if(e instanceof Attack attack && attack.getId() == enemy.getLastAttackID()){
-                            ((Player)attack.getOwner()).applyXP(enemy.getRewardXP());
-                        }
+            else if (entity instanceof Enemy enemy && enemy.getHitPoints() <= 0){
+                //Trigger death animation;
+                //Give reward xp to the player who took the last hit
+                for (Entity e:entities){
+                    if(e instanceof Attack attack && attack.getId() == enemy.getLastAttackID()){
+                        ((Player)attack.getOwner()).applyXP(enemy.getRewardXP());
                     }
-                    
-                    //Handle Special Deaths
-                    if(enemy instanceof ConjoinedRats cr) cr.handleDeath(this);
-                    if(enemy instanceof FishMonster fm && !(fm.isPhase3())) {
-                        fm.triggerPhase3();
-                        continue;    
-                    }
-                    
-                    Entity rolledItem = itemsHandler.rollItem(enemy);
-                    if (rolledItem != null) addEntity(rolledItem);
-                    entities.remove(enemy);
-                }   
+                }
+                
+                Entity rolledItem = itemsHandler.rollItem(enemy);
+                if (rolledItem != null) addEntity(rolledItem);
+                entities.remove(enemy);
             }
             else if (entity instanceof Attack attack && attack.getIsExpired()){
                 entities.remove(attack);
@@ -111,9 +100,6 @@ public class ServerMaster {
 
     private void handleDownsAndRevives(Player player) {
         //DOWNING AND REVIVAL MECHANICS
-            //Set death sprite
-            player.setCurrSprite(9);
-
             //If the player has not yet been recorded as being downed, set them as such
             if (!player.getIsDown()){
                 player.setIsDown(true);
@@ -121,10 +107,6 @@ public class ServerMaster {
                 //If no players are left, activate end game sequence
                 downedPlayersNum++;
                 if (downedPlayersNum == playerNum){
-                    StringBuilder sb = new StringBuilder();
-                    
-                    sb.append(NetworkProtocol.GAME_OVER);
-                    sendMessageToClients(sb.toString());
                     System.out.println("GAME OVER");
                 }
             }
@@ -155,22 +137,19 @@ public class ServerMaster {
             if(player.getIsReviving() && player.getIsRevived()){
                 player.setHitPoints(1);
                 player.setIsDown(false);
-
-                //Remove death sprite
-                player.setCurrSprite(3);
-                
+                //Insert revival animation
             }
         }
     
     private boolean checkRoomCleared(){
         if (currentRoom.isStartRoom() || currentRoom.isCleared()) return true;
-        // System.out.println("Current room is end room: " + currentRoom.isEndRoom());
+        
+        if (currentRoom.isEndRoom()) return (currentRoom.getMobSpawner().isBossKilled());
+
         if (currentRoom.getMobSpawner().isAllKilled()) {
             currentRoom.setCleared(true);
             return true;
-        } 
-        return false;
-
+        } return false;
     }
 
     /**
@@ -294,8 +273,6 @@ public class ServerMaster {
         mapData.append(NetworkProtocol.LEVEL_CHANGE).append(newDungeonMapData).append(NetworkProtocol.DELIMITER);
         sendMessageToClients(mapData.toString());
 
-        StringBuilder playersData = new StringBuilder();
-
         for (Player player : players) {
             player.setCurrentRoom(currentRoom);
             player.setWorldX(currentRoom.getCenterX());
@@ -363,6 +340,8 @@ public class ServerMaster {
 
     public void resolveCollision(Entity e1, Entity e2, int[] b1, int[] b2){
 
+        if (e1.getCurrentRoom() != e2.getCurrentRoom()) return;
+
         // ATTACK-PLAYER/ENEMY COLLISION HANDLING
         // If entity is an attack and is not friendly and if the second entity is a player, then the player takes damage.
         // If entity is an attack and is friendly and if the second entity is an enemy, then the enemy takes damage.
@@ -394,10 +373,7 @@ public class ServerMaster {
             damagePlayer(player, enemy);
         }
 
-        //Disable overlap resolution for enemies that summon other enemies
-        else if (e1 instanceof Enemy && e2 instanceof Enemy 
-        && !(e1 instanceof ConjoinedRats) && !(e2 instanceof ConjoinedRats)
-        && !(e1 instanceof FishMonster) && !(e2 instanceof FishMonster))
+        else if (e1 instanceof Enemy && e2 instanceof Enemy)
             preventOverlap(e1, e2, b1, b2);
 
         else if (e1 instanceof Player p1 && e2 instanceof Player p2){
@@ -446,17 +422,26 @@ public class ServerMaster {
     //Players generate i-frames when damaged
     private void damagePlayer(Player player, Entity entity){
         //Debouncing condition
-        if(player.getIsInvincible()){
+        if(!player.getIsInvincible()){
             //Calculate damage taken: new health = current health - (damage*(1-(defense/100)))
             double dmgMitigationFactor = (1-(player.getDefense()/100.0));
             if(dmgMitigationFactor < 0) dmgMitigationFactor = 0;
-            int dmgReceived = (int) (Math.round(entity.getDamage()*dmgMitigationFactor));
+            int dmgReceived = (int) (entity.getDamage()*dmgMitigationFactor);
             player.setHitPoints(player.getHitPoints()-dmgReceived);
             applyKnockBack(player, entity);
             player.triggerInvincibility();
             
+            if (entity instanceof Attack attack) {
+                applyAttackEffectsToPlayer(player, attack);
+            } 
         }
+    }
 
+    private void applyAttackEffectsToPlayer(Player player, Attack attack){
+        for (StatusEffect se : attack.getAttackEffects()) {
+            StatusEffect effectCopy = (StatusEffect) se.copy();
+            player.addStatusffect(effectCopy); 
+        }
     }
 
     //Enemy can only take one instance of damage per attack
@@ -465,7 +450,7 @@ public class ServerMaster {
         //Debouncing condition
         if(enemy.validateAttack(id)){
             enemy.setHitPoints(enemy.getHitPoints()-attack.getDamage());
-            applyKnockBack(enemy, attack);
+            if (!enemy.isBoss) applyKnockBack(enemy, attack);
             enemy.loadAttack(id);
         }
     }
@@ -516,7 +501,7 @@ public class ServerMaster {
 
     }
 
-        private void applyKnockBack(Entity target, Entity attacker) {
+    private void applyKnockBack(Entity target, Entity attacker) {
 
         int[] entityPosition = target.getPositionVector();
         int[] attackPosition = attacker.getPositionVector();
@@ -524,7 +509,13 @@ public class ServerMaster {
         int[] normalVector = getNormalVector(entityPosition, attackPosition);
 
         double normalVectorMagnitude = Math.sqrt((normalVector[0]*normalVector[0]) + (normalVector[1]*normalVector[1]));
-        double[] unitNormal = getUnitNormal(normalVector, normalVectorMagnitude);
+        if (normalVectorMagnitude == 0) normalVectorMagnitude = 1;
+        
+        double[] unitNormal;
+
+        if (normalVectorMagnitude == 0) {
+            unitNormal = new double[] {0, -1};
+        } else unitNormal = getUnitNormal(normalVector, normalVectorMagnitude);
 
         int knockBackStrength = 24;
         int newX = (int) (target. getWorldX() - unitNormal[0] * knockBackStrength);
@@ -586,68 +577,58 @@ public class ServerMaster {
         //Debouncing constraints
         if(originPlayer.getIsOnCoolDown() || originPlayer.getIsDown()) return;
         
-        Thread runAttack = new Thread(){
-            @Override
-            public void run(){
-                originPlayer.triggerCoolDown();
-                originPlayer.runAttackFrames();
+        int attackDamage = originPlayer.getDamage();
+        int frameWidth = 800;
+        int frameHeight = 600;
+        int centerX = frameWidth/2;
+        int centerY = frameHeight/2;
 
-                int attackDamage = originPlayer.getDamage();
-                int frameWidth = 800;
-                int frameHeight = 600;
-                int centerX = frameWidth/2;
-                int centerY = frameHeight/2;
-                
-                //Get a point a set distance away from the center of the screen in the direction of the click
-                int vectorX = clickX - centerX;
-                int vectorY = clickY - centerY;  
-                int distance = 20;
-                double normalizedVector = Math.sqrt((vectorX*vectorX)+(vectorY*vectorY));
+        //Get a point a set distance away from the center of the screen in the direction of the click
+        int vectorX = clickX - centerX;
+        int vectorY = clickY - centerY;  
+        int distance = 20;
+        double normalizedVector = Math.sqrt((vectorX*vectorX)+(vectorY*vectorY));
 
-                //Avoids 0/0 division edge case
-                if (normalizedVector == 0) normalizedVector = 1; 
-                double normalizedX = vectorX/normalizedVector;
-                double normalizedY = vectorY/normalizedVector;
-                int attackScreenX = (int) (centerX + distance*normalizedX);
-                int attackScreenY = (int) (centerY + distance*normalizedY);
+        //Avoids 0/0 division edge case
+        if (normalizedVector == 0) normalizedVector = 1; 
+        double normalizedX = vectorX/normalizedVector;
+        double normalizedY = vectorY/normalizedVector;
+        int attackScreenX = (int) (centerX + distance*normalizedX);
+        int attackScreenY = (int) (centerY + distance*normalizedY);
 
-                int playerScreenX = frameWidth/2 - originPlayer.getWidth()/2;
-                int playerScreenY = frameHeight/2 - originPlayer.getHeight()/2;
+        int playerScreenX = frameWidth/2 - originPlayer.getWidth()/2;
+        int playerScreenY = frameHeight/2 - originPlayer.getHeight()/2;
 
-                int worldX = (originPlayer.getWorldX() - playerScreenX) + attackScreenX;
-                int worldY = (originPlayer.getWorldY() - playerScreenY) + attackScreenY;
+        int worldX = (originPlayer.getWorldX() - playerScreenX) + attackScreenX;
+        int worldY = (originPlayer.getWorldY() - playerScreenY) + attackScreenY;
 
-                Attack playerAttack = null;
-                int attackHeight;
-                int attackWidth;
-
-                if (originPlayer.getIdentifier() == NetworkProtocol.FASTCAT){
-                    attackWidth = 40;
-                    attackHeight = 40;
-                    playerAttack = new PlayerSlash(cid, originPlayer, worldX-attackWidth/2, worldY - attackHeight/2, 
-                    attackDamage, true);
-                } 
-                else if (originPlayer.getIdentifier() == NetworkProtocol.HEAVYCAT){
-                    attackWidth = 80;
-                    attackHeight = 80;
-                    playerAttack = new PlayerSmash(cid, originPlayer, worldX-attackWidth/2, worldY - attackHeight/2, 
-                    attackDamage, true);
-                }
-                else if (originPlayer.getIdentifier() == NetworkProtocol.GUNCAT){
-                    attackWidth = 16;
-                    attackHeight = 16;
-                    playerAttack = new PlayerBullet(cid, originPlayer, worldX-attackWidth/2, worldY - attackHeight/2, 
-                    normalizedX, normalizedY, attackDamage, true);
-                }
-                
-                if(playerAttack != null){
-                    playerAttack.setCurrentRoom(originPlayer.getCurrentRoom());
-                    addEntity(playerAttack); 
-                }
-            }
-        };
-        runAttack.start();
+        Attack playerAttack = null;
+        int attackHeight;
+        int attackWidth;
+        if (originPlayer.getIdentifier().equals(NetworkProtocol.FASTCAT)){
+            attackWidth = 40;
+            attackHeight = 40;
+            playerAttack = new PlayerSlash(cid, originPlayer, worldX-attackWidth/2, worldY - attackHeight/2, 
+            attackDamage, true);
+        } 
+        else if (originPlayer.getIdentifier().equals(NetworkProtocol.HEAVYCAT)){
+            attackWidth = 80;
+            attackHeight = 80;
+            playerAttack = new PlayerSmash(cid, originPlayer, worldX-attackWidth/2, worldY - attackHeight/2, 
+            attackDamage, true);
+        }
+        else if (originPlayer.getIdentifier().equals(NetworkProtocol.GUNCAT)){
+            attackWidth = 16;
+            attackHeight = 16;
+            playerAttack = new PlayerBullet(originPlayer, worldX-attackWidth/2, worldY - attackHeight/2, 
+            normalizedX, normalizedY, attackDamage);
+        }
         
+        if(playerAttack != null){
+            playerAttack.setCurrentRoom(originPlayer.getCurrentRoom());
+            originPlayer.triggerCoolDown();
+            addEntity(playerAttack); 
+        }
 
         // System.out.println("Created PlayerSlash: " + playerAttack.getId() + " at (" + playerAttack.getWorldX() + ", " + playerAttack.getWorldX() + ")");
     }
@@ -729,8 +710,7 @@ public class ServerMaster {
 
         sb.append(userPlayer.getXPBarPercent()).append(NetworkProtocol.DELIMITER)
         .append(userPlayer.getCurrentLvl()).append(NetworkProtocol.DELIMITER).
-        append(heldItemIdentifier).append(NetworkProtocol.DELIMITER)
-        .append(bossHPPercent).append(NetworkProtocol.DELIMITER);
+        append(heldItemIdentifier).append(NetworkProtocol.DELIMITER);
 
 
         if (userPlayerData.startsWith(NetworkProtocol.ROOM_CHANGE)) {
@@ -778,20 +758,21 @@ public class ServerMaster {
             String[] dataParts = userPlayerData.split(NetworkProtocol.SUB_DELIMITER);
             
             // Extract data from it
-            String identifier = dataParts[0].substring(NetworkProtocol.ROOM_CHANGE.length());
+            char identifier = dataParts[0].substring(NetworkProtocol.ROOM_CHANGE.length()).toCharArray()[0];
             // System.out.println("identifier:" + identifier);
             int clientId = Integer.parseInt(dataParts[1]);
             int newX = Integer.parseInt(dataParts[2]);
             int newY = Integer.parseInt(dataParts[3]);
             int hp = Integer.parseInt(dataParts[4]);
             int newRoomId = Integer.parseInt(dataParts[5]);
-            int currSprite = Integer.parseInt(dataParts[6]);
+            int zIndex = Integer.parseInt(dataParts[6]);
 
             // Use the data to set relevant fields
             Room newRoom = dungeonMap.getRoomFromId(newRoomId);
             userPlayer.setPosition(newX, newY);
             userPlayer.setCurrentRoom(newRoom);
             userPlayer.setHitPoints(hp);
+
             currentRoom = newRoom;
             handleSpawnersOnRoomChange(newRoom);
             if (!currentRoom.isStartRoom() && !currentRoom.isCleared()) newRoom.closeDoors();
@@ -804,7 +785,8 @@ public class ServerMaster {
             .append(newY).append(NetworkProtocol.SUB_DELIMITER)
             .append(hp).append(NetworkProtocol.SUB_DELIMITER)
             .append(newRoomId).append(NetworkProtocol.SUB_DELIMITER)
-            .append(currSprite).append(NetworkProtocol.DELIMITER);
+            .append(zIndex).append(NetworkProtocol.DELIMITER);
+
 
             // System.out.println("String returned by handleRoomTransition: " + sb.toString());
 
@@ -859,7 +841,7 @@ public class ServerMaster {
     }
 
     public void addEntity(Entity e) {
-        e.setCurrentRoom(currentRoom);
+        if (e.getCurrentRoom() == null) e.setCurrentRoom(currentRoom);
         if(e instanceof Player) playerNum++;
         entities.add(e);
     }

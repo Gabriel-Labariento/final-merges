@@ -4,8 +4,10 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 public class Rat extends Enemy{
-    public static int ratCount = 0;
+    private static final int SPRITE_FRAME_DURATION = 200;
+    private static final int BITE_COOLDOWN = 1500;
     private long lastSpriteUpdate = 0;
+    private long lastBiteAttack = 0;
     private static BufferedImage[] sprites;
 
     static {
@@ -13,7 +15,7 @@ public class Rat extends Enemy{
     }
 
     public Rat(int x, int y) {
-        id = ratCount++;
+        id = enemyCount++;
         identifier = NetworkProtocol.RAT;
         speed = 1;
         height = 16;
@@ -59,29 +61,21 @@ public class Rat extends Enemy{
         g2d.drawImage(sprites[currSprite], xOffset, yOffset, width, height, null);
     }
 
-    @Override
-    public String getAssetData(boolean isUserPlayer) {
-        StringBuilder sb = new StringBuilder();
-        // System.out.println("In getAssetData of Rat, identifier is " + identifier);
-        // String format: B,id,x,y,currentRoomId,currsprite|
-        sb.append(identifier).append(NetworkProtocol.SUB_DELIMITER)
-        .append(id).append(NetworkProtocol.SUB_DELIMITER)
-        .append(worldX).append(NetworkProtocol.SUB_DELIMITER)
-        .append(worldY).append(NetworkProtocol.SUB_DELIMITER)
-        .append(currentRoom.getRoomId()).append(NetworkProtocol.SUB_DELIMITER)
-        .append(currSprite).append(NetworkProtocol.DELIMITER);
-
-        return sb.toString();
-    }
-
+ 
     @Override
     public void updateEntity(ServerMaster gsm){
-        // TODO: ENEMY AI LOGIC
-        now = System.currentTimeMillis();
+
+        long now = System.currentTimeMillis();
 
         Player pursued = scanForPlayer(gsm);
-        if (pursued != null) pursuePlayer(pursued);
-        else return;
+        if (pursued == null) return;
+        if (getSquaredDistanceBetween(this, pursued) < GameCanvas.TILESIZE * GameCanvas.TILESIZE) {
+            if (now - lastBiteAttack > BITE_COOLDOWN ) {
+                createBiteAttack(gsm, pursued, null);
+                lastBiteAttack = now;
+            }
+        }
+        else pursuePlayer(pursued);
 
         // Sprite walk update
         if (now - lastSpriteUpdate > SPRITE_FRAME_DURATION) {

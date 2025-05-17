@@ -132,8 +132,6 @@ public class GameClient {
                             parseMapData(receivedMessage);
                         } else if (receivedMessage.startsWith(NetworkProtocol.BOSS_KILLED)) {
                             parseBossKilledData(receivedMessage);
-                        } else if (receivedMessage.startsWith(NetworkProtocol.GAME_OVER)) {
-                            initiateGameOver();
                         } else if (receivedMessage.startsWith(NetworkProtocol.LEVEL_CHANGE)) {
                             clientMaster.getEntities().clear();
                             String mapData = receivedMessage.substring(NetworkProtocol.LEVEL_CHANGE.length());  // Receives a string containing map and player data
@@ -151,23 +149,17 @@ public class GameClient {
         receiveAssetsThread.start();
     }
     
-    private void initiateGameOver(){
-        clientMaster.setIsGameOver(true);
-    }
-
     /**
      * Parses a serialized string expected to be in the form ClientId|P:playerX,playerY|E:entity1X,entity1Y,entity2x,entity2Y...|
      * @param message a serialized string in the form ClientId|P:playerX,playerY|E:entity1X,entity1Y,entity2x,entity2Y...|
      */
     private void parseEntitiesData(String message){
-
         // System.out.println(message);
         String[] messageParts = message.split("\\" + NetworkProtocol.DELIMITER); // Have to use \\ to escape. Turns out "|" is special for java
         this.clientId = Integer.parseInt(messageParts[0]);
         clientMaster.setXPBarPercent(Integer.parseInt(messageParts[1]));
         clientMaster.setUserLvl(Integer.parseInt(messageParts[2]));
         clientMaster.setHeldItemIdentifier(messageParts[3]);
-        clientMaster.setBossHPBarPercemt(Integer.parseInt(messageParts[4]));
 
         for (String part : messageParts) {
             if (part.startsWith(NetworkProtocol.USER_PLAYER)) {
@@ -180,7 +172,7 @@ public class GameClient {
                 int playerY = Integer.parseInt(playerData[3]);
                 int playerHealth = Integer.parseInt(playerData[4]);
                 int playerRoomId = Integer.parseInt(playerData[5]);
-                int currsprite = Integer.parseInt(playerData[6]);
+                int playerZIndex = Integer.parseInt(playerData[6]);
         
                 // System.out.println(" user Player loaded");
                 try {
@@ -189,7 +181,7 @@ public class GameClient {
                     player.setCurrentRoom(currentRoom);
                     player.setIsMaxHealthSet(true);
                     player.setHitPoints(playerHealth);
-                    player.setCurrSprite(currsprite);
+                    player.setzIndex(playerZIndex);
                     clientMaster.setUserPlayer(player);
                     clientMaster.setCurrentRoom(currentRoom);
                         
@@ -209,7 +201,7 @@ public class GameClient {
                 int x = Integer.parseInt(otherPlayerData[2]);
                 int y = Integer.parseInt(otherPlayerData[3]);
                 int hp = Integer.parseInt(otherPlayerData[4]);
-                int currsprite = Integer.parseInt(otherPlayerData[6]);
+                int zIndex = Integer.parseInt(otherPlayerData[5]);
                 
                 
                 // Only load the player if it is not the user player and it is in the same room
@@ -218,7 +210,7 @@ public class GameClient {
                     other.setCurrentRoom(clientMaster.getRoomById(otherRoomId));
                     other.setIsMaxHealthSet(true);
                     other.setHitPoints(hp);
-                    other.setCurrSprite(currsprite);
+                    other.setzIndex(zIndex);
                     clientMaster.addEntity(other);
                 } 
             } else if (part.startsWith(NetworkProtocol.ENTITY)) {
@@ -229,7 +221,7 @@ public class GameClient {
                 //     // System.out.println("Entity string: " + string);
                 // }
 
-                if (entityData.length >= 6) {
+                if (entityData.length >= 7) {
                     int roomId = Integer.parseInt(entityData[4]);
                     if (!(roomId == clientMaster.getCurrentRoom().getRoomId())) continue;
                     
@@ -238,7 +230,8 @@ public class GameClient {
                     int x = Integer.parseInt(entityData[2]);
                     int y = Integer.parseInt(entityData[3]);
                     int sprite = Integer.parseInt(entityData[5]);
-                    clientMaster.loadEntity(identifier, id, x, y, roomId, sprite);
+                    int zIndex = Integer.parseInt(entityData[6]);
+                    clientMaster.loadEntity(identifier, id, x, y, roomId, sprite, zIndex);
                 } else { // SPRITELESS OBJECTS
                     // Don't load if not in the same room as the client.
                     int roomId = Integer.parseInt(entityData[4]);
@@ -248,7 +241,7 @@ public class GameClient {
                     int id = Integer.parseInt(entityData[1]);
                     int x = Integer.parseInt(entityData[2]);
                     int y = Integer.parseInt(entityData[3]);
-                    clientMaster.loadEntity(identifier, id, x, y, roomId, 0); // TODO: TEMPORARY 0 SPRITE   
+                    clientMaster.loadEntity(identifier, id, x, y, roomId, 0, 0);
                 }
             }
         
@@ -262,6 +255,7 @@ public class GameClient {
      * @param message the substring containing map data
      */
     private void parseMapData(String message){
+        // System.out.println("Inside parseMapData: " + message);
         DungeonMapDeserializeResult result = new DungeonMap().deserialize(message);
         clientMaster.setCurrentRoom(result.getStartRoom());
         clientMaster.setAllRooms(result.getAllRooms());
@@ -328,6 +322,11 @@ public class GameClient {
         return str.toString();
     }
 
+    /**
+     * 
+     * @param input
+     * @param isPressed
+     */
     public void keyInput(String input, Boolean isPressed){
         switch (input) {
             case "Q":
@@ -348,6 +347,11 @@ public class GameClient {
         }
     }
 
+    /**
+     * Sets the x and y coordinate of a clickInput
+     * @param x x-coordinate
+     * @param y y-coordinate
+     */
     public void clickInput(int x, int y){
         clickedX = x;
         clickedY = y;

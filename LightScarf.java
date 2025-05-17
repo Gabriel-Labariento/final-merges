@@ -1,17 +1,7 @@
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.geom.*;
 
 public class LightScarf extends Item {
-    public static BufferedImage sprite;
-    static {
-        try {
-            sprite = ImageIO.read(LightScarf.class.getResourceAsStream("resources/Sprites/Items/lightscarf.png"));
-        } catch (IOException e) {
-            System.out.println("Exception in setSprites()" + e);
-        }
-    }
 
     public LightScarf(int x, int y){
         identifier = NetworkProtocol.LIGHTSCARF;
@@ -24,26 +14,24 @@ public class LightScarf extends Item {
 
     @Override
     public void applyEffects(){
-        initialCDDuration = owner.getAttackCDDuration();
-        owner.setAttackCDDuration((int) Math.round(initialCDDuration*0.5));
-
-        initialAttackFrameDuration = owner.getAttackFrameDuration();
-        owner.setAttackFrameDuration((int) Math.round(initialAttackFrameDuration*0.5));
+        initialCDDuration = owner.getCoolDownDuration();
+        owner.setCoolDownDuration((int) Math.round(initialCDDuration*0.5));
 
         initialMaxHealth = owner.getMaxHealth();
-        owner.setMaxHealth((int) Math.round(initialMaxHealth*0.25));
+        owner.setMaxHealth((int) Math.round(initialMaxHealth*0.75));
 
     }
 
     @Override
     public void removeEffects(){
-        owner.setAttackCDDuration(initialCDDuration);
+        owner.setCoolDownDuration(initialCDDuration);
         owner.setMaxHealth(initialMaxHealth);
-        owner.setAttackFrameDuration(initialAttackFrameDuration);
     }
 
     @Override
     public void draw(Graphics2D g2d, int xOffset, int yOffset){
-        g2d.drawImage(sprite, xOffset, yOffset, width, height, null);
+        Rectangle2D.Double sprite = new Rectangle2D.Double(xOffset, yOffset, width, height);
+        g2d.setColor(Color.ORANGE);
+        g2d.fill(sprite);
     }
 }

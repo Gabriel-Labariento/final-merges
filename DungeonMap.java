@@ -1,7 +1,7 @@
 import java.util.*;
 
 public class DungeonMap {
-    private ArrayList<Room> rooms;
+    private final ArrayList<Room> rooms;
     private Room startRoom, endRoom;
     private int gameLevel;
 
@@ -10,10 +10,8 @@ public class DungeonMap {
         this.gameLevel = gameLevel;
     }
 
-    // Multiple constructors in the meantime while refactoring  
-    public DungeonMap(){
+    public DungeonMap () {
         rooms = new ArrayList<>();
-        gameLevel = 0;
     }
 
 
@@ -174,7 +172,7 @@ public class DungeonMap {
 
         // Create the rooms, no connections yet
         for (int i = 0; i < numRooms; i++) {
-            Room r = new Room(i, x, y);
+            Room r = new Room(i, x, y, gameLevel);
             rooms.add(r);
         }
     }
@@ -289,8 +287,8 @@ public class DungeonMap {
     public String serialize(){
 
         StringBuilder sb = new StringBuilder();
-        // 1. Number of rooms
-        sb.append(NetworkProtocol.MAP_DATA).append(rooms.size()).append(NetworkProtocol.DELIMITER);
+        // 1. Game level
+        sb.append(NetworkProtocol.MAP_DATA).append(gameLevel).append(NetworkProtocol.DELIMITER);
         // 2. Data of each room
         for (Room room : rooms) {
             sb.append(room.serialize()).append(NetworkProtocol.DELIMITER);
@@ -313,8 +311,7 @@ public class DungeonMap {
         // Clear data 
         rooms.clear();
         
-        int roomCount;
-        
+       
         // Helper utils
         HashMap<Integer, Room> mapIdToRoom = new HashMap<>();
         ArrayList<DoorDataHolder> doorDataList = new ArrayList<>();
@@ -322,10 +319,10 @@ public class DungeonMap {
 
         String[] messageParts = message.split("\\" + NetworkProtocol.DELIMITER); // Split at "|"
         
-        // Part 1: Deserialize Rooms and Doors
+        // Part 1: Deserialize gamelevel, Rooms and Doors
         for (String part : messageParts) {
             if (part.startsWith(NetworkProtocol.MAP_DATA)) {
-                roomCount = Integer.parseInt(part.substring(NetworkProtocol.MAP_DATA.length()));
+                this.gameLevel = Integer.parseInt(part.substring(NetworkProtocol.MAP_DATA.length()));
             } else if (part.startsWith(NetworkProtocol.ROOM )){
                 // Parse roomData
                 deserializeRooms(part.substring(NetworkProtocol.ROOM.length()), mapIdToRoom);
@@ -368,7 +365,7 @@ public class DungeonMap {
         boolean isStart = Boolean.parseBoolean(roomData[3]);
         boolean isEnd = Boolean.parseBoolean(roomData[4]);
 
-        Room r = new Room(roomId, roomX, roomY);
+        Room r = new Room(roomId, roomX, roomY, gameLevel);
         r.setIsStartRoom(isStart);
         r.setIsEndRoom(isEnd);
         mapIdToRoom.put(roomId, r);
@@ -428,8 +425,8 @@ public class DungeonMap {
      * DoorDataHolder, a new Door object can be made.
      */
     private class DoorDataHolder{
-        private int id, x, y, roomAId, roomBId;
-        private String direction;
+        private final int id, x, y, roomAId, roomBId;
+        private final String direction;
 
         public DoorDataHolder(int id, int x, int y, String direction, int roomAId, int roomBId) {
             this.id = id;

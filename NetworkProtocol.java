@@ -34,10 +34,12 @@ public class NetworkProtocol {
     public static final String CONJOINEDRATS = "AA";
     public static final String FISHMONSTER = "AB";
     public static final String SPIDERBULLET = "AC";
-    public static final String LASERBULLET = "AD";
-    public static final String ENEMYBITE = "AE";
-    public static final String ENEMYSLASH = "AF";
+    public static final String SNAKEBULLET = "ZW";
+    public static final String ENEMYSMASH = "ZX";
+    public static final String ENEMYBARK = "ZY";
+    public static final String ENEMYBITE = "ZZ";
     
+
     public static final String REDFISH = "1"; // Rat
     public static final String CATTREAT = "2"; // Rat
     public static final String MILK = "3"; // Rat
@@ -54,7 +56,6 @@ public class NetworkProtocol {
     public static final String ROOM_CHANGE = "RC:";
     public static final String LEVEL_CHANGE = "LC:";
     public static final String BOSS_KILLED = "BK:";
-    public static final String GAME_OVER = "GO:";
     public static final String HP = "*";
     public static final String ATTACK = "ATK:";
     public static final String KEYS = "K:";

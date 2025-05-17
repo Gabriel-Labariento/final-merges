@@ -5,8 +5,17 @@ import javax.imageio.ImageIO;
 
 public class RatKing extends Enemy {
     private static final int SPRITE_FRAME_DURATION = 200;
+    private static final int SPAWN_COOLDOWN = 4000;
+    private static final int ATTACK_COOLDOWN = 5000;
+    private static final int SMASH_COOLDOWN = 3000;
+    private static final int ATTACK_RANGE = GameCanvas.TILESIZE * 3;
+    private long lastAttackTime = 0;
+    private long lastSpawnTime = 0;
+    private long lastSmashTime = 0;
     private long lastSpriteUpdate = 0;
     private static BufferedImage[] sprites;
+    private enum Phase {MOVE_AWAY, CHASE}
+    private Phase currentPhase;
 
     static {
         setSprites();
@@ -20,12 +29,13 @@ public class RatKing extends Enemy {
         width = 48;
         worldX = x;
         worldY = y;
-        maxHealth = 10;
+        maxHealth = 70;
         hitPoints = maxHealth;
         damage = 2;
         rewardXP = 200;
         currentRoom = null;
         currSprite = 0;
+        currentPhase = Phase.MOVE_AWAY;
     }
 
     private static void setSprites() {
@@ -49,21 +59,6 @@ public class RatKing extends Enemy {
     }
 
     @Override
-    public String getAssetData(boolean isUserPlayer) {
-        StringBuilder sb = new StringBuilder();
-        // System.out.println("In getAssetData of Rat, identifier is " + identifier);
-        // String format: H,id,x,y,currentRoomId,currsprite|
-        sb.append(identifier).append(NetworkProtocol.SUB_DELIMITER)
-        .append(id).append(NetworkProtocol.SUB_DELIMITER)
-        .append(worldX).append(NetworkProtocol.SUB_DELIMITER)
-        .append(worldY).append(NetworkProtocol.SUB_DELIMITER)
-        .append(currentRoom.getRoomId()).append(NetworkProtocol.SUB_DELIMITER)
-        .append(currSprite).append(NetworkProtocol.DELIMITER);
-
-        return sb.toString();
-    }
-
-    @Override
     public void matchHitBoxBounds() {
         hitBoxBounds = new int[4];
         hitBoxBounds[0]= worldY + 3;
@@ -74,12 +69,64 @@ public class RatKing extends Enemy {
     
     @Override
     public void updateEntity(ServerMaster gsm){
-        // TODO: ENEMY AI LOGIC
-        now = System.currentTimeMillis();
-
+        long now = System.currentTimeMillis();
         Player pursued = scanForPlayer(gsm);
-        if (pursued != null) pursuePlayer(pursued);
-        else return;
+
+        switch (currentPhase) {
+            case MOVE_AWAY:
+                if (hitPoints <= maxHealth / 2) currentPhase = Phase.CHASE;
+                else {
+                    if (pursued == null) return;
+
+                    // Moving away
+                    moveAwayFromPlayer(pursued);
+
+                    // Spawning new enemies
+                    if (now - lastSpawnTime > SPAWN_COOLDOWN) {
+                        if (currentRoom != null && currentRoom.getMobSpawner() != null) {
+                            Enemy newSpawn = currentRoom.getMobSpawner().createNormalEnemy(currentRoom.getGameLevel());
+                            currentRoom.getMobSpawner().spawnEnemy(newSpawn);
+                            lastSpawnTime = now;
+                        }
+                    }
+
+                    // Attack player in range
+                    if (getSquaredDistanceBetween(this, pursued) <= ATTACK_RANGE * ATTACK_RANGE) {
+                        if (now - lastAttackTime > ATTACK_COOLDOWN) {
+                            createBarkAttack(gsm, pursued, null);
+                            lastAttackTime = now;
+                        } 
+                    }
+                }
+                break;
+
+            case CHASE:
+                if (pursued == null) return;    
+                speed = 2;
+
+                double squaredDistance = getSquaredDistanceBetween(this, pursued);
+
+                // Smash attack
+                if ( squaredDistance <= ATTACK_RANGE * ATTACK_RANGE ){
+                    if (now - lastSmashTime > SMASH_COOLDOWN) {
+                        performSmashAttack(gsm);
+                        lastSmashTime = now;
+                    }
+                } 
+                
+                // Wide attack
+                if ( squaredDistance <= ATTACK_RANGE * ATTACK_RANGE) {
+                    if (now - lastAttackTime > ATTACK_COOLDOWN){
+                        createBarkAttack(gsm, pursued, null);
+                        lastAttackTime = now;
+                    }
+                } 
+                
+                pursuePlayer(pursued);
+                break;
+            default:
+                throw new AssertionError();
+        }
 
         // Sprite walk update
         if (now - lastSpriteUpdate > SPRITE_FRAME_DURATION) {
@@ -89,12 +136,30 @@ public class RatKing extends Enemy {
             } else {
                 currSprite++;
                 if (currSprite < 3 || currSprite > 5) currSprite = 3;
-            }
-            lastSpriteUpdate = now;
+            } lastSpriteUpdate = now;
         }
-
         matchHitBoxBounds();
     }
 
-    
+    @Override
+    public Player scanForPlayer(ServerMaster gsm){
+        final int scanRadius = GameCanvas.TILESIZE * 10; // Larger scan radius
+        Player closestPlayer = null;
+        double minDistance = Integer.MAX_VALUE;
+
+        for (Entity e : gsm.getEntities()) {
+            if (e instanceof Player player) {
+                if (this.getCurrentRoom() != player.getCurrentRoom()) continue; 
+                // Get the center distance between the player and the entity
+                double distanceSquared = 
+                    (Math.pow(getCenterX() - e.getCenterX(), 2) + Math.pow(getCenterY() - e.getCenterY(), 2));
+                
+                if ( (distanceSquared <= scanRadius * scanRadius) && (distanceSquared < minDistance)) {
+                    closestPlayer = player;
+                    minDistance = distanceSquared;
+                }
+            }
+        }
+        return closestPlayer;
+    }
 }
