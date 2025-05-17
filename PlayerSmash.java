@@ -1,20 +1,8 @@
+import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import javax.imageio.ImageIO;
+import java.awt.geom.*;
 
 public class PlayerSmash extends Attack{
-    public static final int WIDTH = 80;
-    public static final int HEIGHT = 80;
-
-    public static BufferedImage sprite;
-    static {
-        try {
-            sprite = ImageIO.read(PlayerSmash.class.getResourceAsStream("resources/Sprites/Attacks/playersmash.png"));
-        } catch (IOException e) {
-            System.out.println("Exception in setSprites()" + e);
-        }
-    }
 
     public PlayerSmash(int cid, Entity entity, int x, int y, int d, boolean isFriendly){
         attackNum++;
@@ -24,15 +12,10 @@ public class PlayerSmash extends Attack{
         owner = entity;
         this.isFriendly = isFriendly;
         damage = d;
-        width = WIDTH;
-        height = HEIGHT;
+        width = 80;
+        height = 80;
         worldX = x;
         worldY = y;
-
-        //Temporary hitPoints allocation
-        hitPoints = 100;
-
-
         //For checking attack duration
         duration = 800;
         setExpirationTime(duration);
@@ -42,7 +25,9 @@ public class PlayerSmash extends Attack{
 
     @Override
     public void draw(Graphics2D g2d, int xOffset, int yOffset){
-        g2d.drawImage(sprite, xOffset, yOffset, width, height, null);
+        Rectangle2D.Double sprite = new Rectangle2D.Double(xOffset, yOffset, width, height);
+        g2d.setColor(Color.PINK);
+        g2d.fill(sprite);
     }
 
     @Override

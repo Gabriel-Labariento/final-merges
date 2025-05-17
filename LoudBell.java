@@ -1,17 +1,7 @@
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.geom.*;
 
 public class LoudBell extends Item {
-    public static BufferedImage sprite;
-    static {
-        try {
-            sprite = ImageIO.read(LoudBell.class.getResourceAsStream("resources/Sprites/Items/loudbell.png"));
-        } catch (IOException e) {
-            System.out.println("Exception in setSprites()" + e);
-        }
-    }
     
     public LoudBell(int x, int y){
         identifier = NetworkProtocol.LOUDBELL;
@@ -27,26 +17,24 @@ public class LoudBell extends Item {
         initialDefense = owner.getDefense();
         owner.setDefense(initialDefense-100);
 
-        initialCDDuration = owner.getAttackCDDuration();
-        owner.setAttackCDDuration((int) Math.round(initialCDDuration*0.75));
-
-        initialAttackFrameDuration = owner.getAttackFrameDuration();
-        owner.setAttackFrameDuration((int) Math.round(initialAttackFrameDuration*0.75));
+        initialCDDuration = owner.getCoolDownDuration();
+        owner.setCoolDownDuration((int) Math.round(initialCDDuration*0.75));
 
         initialDamage = owner.getDamage();
-        owner.setDamage((int) Math.round(initialDamage*2.0));
+        owner.setDamage((int) Math.round(initialDamage*1.25));
     }
 
     @Override
     public void removeEffects(){
         owner.setDefense(initialDefense);
-        owner.setAttackCDDuration(initialCDDuration);
+        owner.setCoolDownDuration(initialCDDuration);
         owner.setDamage(initialDamage);
-        owner.setAttackFrameDuration(initialAttackFrameDuration);
     }
 
     @Override
     public void draw(Graphics2D g2d, int xOffset, int yOffset){
-        g2d.drawImage(sprite, xOffset, yOffset, width, height, null);
+        Rectangle2D.Double sprite = new Rectangle2D.Double(xOffset, yOffset, width, height);
+        g2d.setColor(Color.ORANGE);
+        g2d.fill(sprite);
     }
 }

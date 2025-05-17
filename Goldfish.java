@@ -1,18 +1,8 @@
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.geom.*;
 
 public class Goldfish extends Item {
-    public static BufferedImage sprite;
-        static {
-            try {
-                sprite = ImageIO.read(Goldfish.class.getResourceAsStream("resources/Sprites/Items/goldfish.png"));
-            } catch (IOException e) {
-                System.out.println("Exception in setSprites()" + e);
-            }
-        }
-
+    
     public Goldfish(int x, int y){
         identifier = NetworkProtocol.GOLDFISH;
         worldX = x;
@@ -33,6 +23,8 @@ public class Goldfish extends Item {
 
     @Override
     public void draw(Graphics2D g2d, int xOffset, int yOffset){
-        g2d.drawImage(sprite, xOffset, yOffset, width, height, null);
+        Rectangle2D.Double sprite = new Rectangle2D.Double(xOffset, yOffset, width, height);
+        g2d.setColor(Color.WHITE);
+        g2d.fill(sprite);
     }
 }

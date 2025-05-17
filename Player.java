@@ -1,6 +1,11 @@
-public abstract class Player extends Entity{
+
+import java.util.ArrayList;
+import java.util.Iterator;
+
+public abstract class Player extends Entity implements Effectable{
     public static final int INVINCIBILITY_DURATION = 1000;
     public static final int REVIVAL_DURATION = 5000;
+    public int coolDownDuration;
     public long invincibilityEnd;
     public long coolDownEnd;
     public int screenX;
@@ -12,12 +17,15 @@ public abstract class Player extends Entity{
     public int currentLvl;
     public int currentXPCap;
     public int pastXPCap;
+    protected int baseSpeed;
     public Item heldItem;
+    private ArrayList<StatusEffect> statusEffects;
 
     public Player(){
         currentLvl = 1;
         currentXPCap = 100;
         heldItem = null;
+        statusEffects = new ArrayList<>();
     }
 
     public void applyXP(int xp){
@@ -35,7 +43,6 @@ public abstract class Player extends Entity{
             //Reset item effects
             if(heldItem != null){
                 heldItem.removeEffects();
-                heldItem.applyEffects();    
             }
 
             //Exponential function for scaling required experience points properly
@@ -52,6 +59,14 @@ public abstract class Player extends Entity{
 
     public int getCurrentXPCap(){
         return currentXPCap;
+    }
+
+    public int getCoolDownDuration(){
+        return coolDownDuration;
+    }
+
+    public void setCoolDownDuration(int duration){
+        coolDownDuration = duration;
     }
 
     public void setHeldItem(Item item){
@@ -83,7 +98,7 @@ public abstract class Player extends Entity{
     }
 
     public void triggerCoolDown(){
-        coolDownEnd = System.currentTimeMillis() + attackCDDuration;
+        coolDownEnd = System.currentTimeMillis() + coolDownDuration;
     }
 
     public boolean getIsOnCoolDown(){
@@ -110,41 +125,24 @@ public abstract class Player extends Entity{
         prevWorldX = worldX;
         prevWorldY = worldY;
 
-        int changeX = 0;
-        int changeY = 0;
 
         switch (input){
             case 'Q':
                 heldItem = null;
                 break;
             case 'W':
-                if (isMoveInbound(0, -1 * speed)) changeY -= speed;
+                if (isMoveInbound(0, -1 * speed)) worldY -= speed;
                 break;
             case 'A':
-                if (isMoveInbound(-1 * speed, 0)) changeX -= speed;
+                if (isMoveInbound(-1 * speed, 0)) worldX -= speed;
                 break;
             case 'S':
-                if (isMoveInbound(0, speed)) changeY += speed;
+                if (isMoveInbound(0, speed)) worldY += speed;
                 break;
             case 'D':
-                if (isMoveInbound(speed, 0)) changeX += speed;
+                if (isMoveInbound(speed, 0)) worldX += speed;
                 break;
         }
-
-        long now = System.currentTimeMillis();
-        if (now - lastSpriteUpdate > SPRITE_FRAME_DURATION && !isAttacking) {
-            if (changeX < 0) {
-                currSprite++;
-                if (currSprite > 2) currSprite = 0;
-            } else {
-                currSprite++;
-                if (currSprite < 3 || currSprite > 5) currSprite = 3;
-            }
-            lastSpriteUpdate = now;
-        }
-
-        worldX += changeX;
-        worldY += changeY;
         matchHitBoxBounds();
     }
 
@@ -177,7 +175,7 @@ public abstract class Player extends Entity{
         .append(newY).append(NetworkProtocol.SUB_DELIMITER)
         .append(hitPoints).append(NetworkProtocol.SUB_DELIMITER)
         .append(next.getRoomId()).append(NetworkProtocol.SUB_DELIMITER)
-        .append(currSprite);
+        .append(getZIndex());
 
         return sb.toString();
     }
@@ -264,14 +262,14 @@ public abstract class Player extends Entity{
             }
             else return getRoomTransitionData(d, d.getOtherRoom(currentRoom)); // return a different string upon room change
         } else {
-            // String format: identifier, clientId,x,y,hp,roomId
+            // String format: identifier, clientId,x,y,hp,roomId,zIndex
             sb.append(identifier).append(NetworkProtocol.SUB_DELIMITER)
             .append(clientId).append(NetworkProtocol.SUB_DELIMITER)
             .append(worldX).append(NetworkProtocol.SUB_DELIMITER)
             .append(worldY).append(NetworkProtocol.SUB_DELIMITER)
             .append(hitPoints).append(NetworkProtocol.SUB_DELIMITER)
             .append(currentRoom.getRoomId()).append(NetworkProtocol.SUB_DELIMITER)
-            .append(currSprite).append(NetworkProtocol.DELIMITER);
+            .append(getZIndex()).append(NetworkProtocol.DELIMITER);
         }
 
         return sb.toString();
@@ -280,26 +278,43 @@ public abstract class Player extends Entity{
     @Override
     public void updateEntity(ServerMaster gsm) {
         //Do regen mechanics if player is holding a thick sweater
-        if(heldItem instanceof ThickSweater ts && !isDown){
+        if(heldItem instanceof ThickSweater ts){
             ts.triggerRegenSystem();
         }
+        updateStatusEffects();
     }
 
     @Override
-    public void runAttackFrames(){
-        int frameCount = 0;
-        while(frameCount < 4){
-            long now = System.currentTimeMillis();
-        
-            if (now - lastSpriteUpdate > attackFrameDuration) {
-                setIsAttacking(true);
-                currSprite++;
-                if (currSprite < 6) currSprite = 6;
-                if (currSprite > 8) currSprite = 3;
-                lastSpriteUpdate = now;
-                frameCount++;
+    public void matchHitBoxBounds() {}
+
+    @Override
+        public void updateStatusEffects(){
+            if (statusEffects.isEmpty()) return;
+            Iterator<StatusEffect> iter = statusEffects.iterator();
+            
+            while(iter.hasNext()){
+                StatusEffect currEffect = iter.next();
+                currEffect.tick(this);
+                if (currEffect.isExpired()) {
+                    currEffect.removeStatusEffect(this);
+                    iter.remove();
+                }
             }
         }
-        setIsAttacking(false);
+
+    @Override
+    public void addStatusffect(StatusEffect se) {
+        statusEffects.add(se);
+    };
+
+    public int getBaseSpeed() {
+        return baseSpeed;
     }
+
+    public ArrayList<StatusEffect> getStatusEffects() {
+        return statusEffects;
+    }
+    
+    
+    
 }

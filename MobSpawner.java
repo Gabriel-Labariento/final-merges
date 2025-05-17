@@ -13,6 +13,7 @@ public class MobSpawner {
     private Room parentRoom;
     private ArrayList<Enemy> spawnedEnemies; 
     private boolean isSpawning;
+    private Enemy boss;
 
     private static final int HIGHESTX = 40;
     private static final int LOWESTX = 5;
@@ -21,12 +22,12 @@ public class MobSpawner {
     private static final int INITIALSPAWNDELAY = 1;
     
     private static final String[][] spawnableEnemiesAtLevel = {
-        {"CleaningBot"}, // TODO: ADD OTHER ENEMIES
-        {"Rat", "Snakelet"}
+        {"Snakelet"}, // TODO: ADD OTHER ENEMIES
+        {"Rat", "SmallDog"}
     };
 
     private static final String[] bosses = {
-        "FishMonster", // TODO: ADD OTHER BOSSES
+        "Snake", // TODO: ADD OTHER BOSSES
         "Snake"
     };
 
@@ -41,8 +42,6 @@ public class MobSpawner {
         
         spawnRate = Math.max(2, 5 - (level / 2 - difficulty));
         maxSpawned = (difficulty == 3) ? 1 : (3 + level + difficulty);
-
-        //FOR DEBUGGING FASTER
         maxSpawned = 1;
         spawnedEnemies = new ArrayList<>();
         // spawnedCount = 0;
@@ -61,6 +60,7 @@ public class MobSpawner {
                     Enemy enemy = null;
                     if (inBossRoom && spawnedCount == 0) {
                         enemy = createBoss(level);
+                        boss = enemy;
                         spawnEnemy(enemy);
                         for (int i = 0; i < 0; i++) {
                             enemy = createNormalEnemy(level);
@@ -111,34 +111,30 @@ public class MobSpawner {
     
     private Enemy createEnemy(String name, int x, int y) {
         switch (name) {
-            case "AdultCat":
-                return new AdultCat(x, y);
-            case "CleaningBot":
-                return new CleaningRobot(x, y);
-            case "ConjoinedRats":
-                return new ConjoinedRats(x, y);
-            case "FishMonster":
-                return new FishMonster(x, y);
-            case "FeralRat":
-                return new FeralRat(x, y);
-            case "MutatedAnchovy":
-                return new MutatedAnchovy(x, y);
-            case "MutatedArcherfish":
-                return new MutatedArcherfish(x, y);
-            case "MutatedPufferfish":
-                return new MutatedPufferfish(x, y);
             case "Rat":
                 return new Rat(x, y);
             case "RatKing":
                 return new RatKing(x, y);
-            case "ScreamerRat":
-                return new ScreamerRat(x, y);
             case "Snakelet":
                 return new Snakelet(x, y);
             case "Snake":
                 return new Snake(x, y);
-            case "SecurityBot":
-                return new SecurityBot(x, y);
+            case "Spider":
+                return new Spider(x, y);
+            case "Cockroach":
+                return new Cockroach(x, y);
+            case "SmallDog":
+                return new SmallDog(x, y);
+            case "FeralDog":
+                return new FeralDog(x, y);
+            case "Bunny":
+                return new Bunny(x, y);
+            case "Bee":
+                return new Bee(x, y);
+            case "Frog":
+                return new Frog(x, y);
+            case "Turtle":
+                return new Turtle(x, y);
             default:
                 System.out.println("Undetected enemy " + name );
                 return new Rat(x, y);
@@ -168,17 +164,16 @@ public class MobSpawner {
         return createEnemy(bossType, spawnX, spawnY);
     }
 
-    private Enemy createNormalEnemy(int level){
+    public Enemy createNormalEnemy(int level){
         int[] spawnCoors = getRandomTileCoordinates();
         spawnX = spawnCoors[0];
         spawnY = spawnCoors[1];
 
         String toSpawn = spawnableEnemiesAtLevel[level][(int) (Math.random() * (spawnableEnemiesAtLevel[level].length))];
-        System.out.println(createEnemy(toSpawn, spawnX, spawnY));
         return createEnemy(toSpawn, spawnX, spawnY);
     }
 
-    private void spawnEnemy(Enemy enemy) {
+    public void spawnEnemy(Enemy enemy) {
         spawnedCount++;   
         isSpawning = true;
         enemy.setCurrentRoom(parentRoom);
@@ -194,4 +189,10 @@ public class MobSpawner {
     public void setParentRoom(Room parentRoom) {
         this.parentRoom = parentRoom;
     }
+
+    public boolean isBossKilled(){
+        if (boss == null) return false;
+        return boss.getHitPoints() <= 0;
+    }
+
 }
