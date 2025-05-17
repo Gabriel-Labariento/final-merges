@@ -10,10 +10,10 @@ public class EnemyBite extends Attack{
 
     static {
         try {
-            BufferedImage img = ImageIO.read(EnemyBite.class.getResourceAsStream("resources/Sprites/SharedEnemy/enemyslash.png"));
+            BufferedImage img = ImageIO.read(EnemyBite.class.getResourceAsStream("resources/Sprites/SharedEnemy/enemybite.png"));
             sprite = img;
         } catch (IOException e) {
-            System.out.println("Exception in EnemyBite setSprites()" + e);
+            System.out.println("Exception in SpiderBullet setSprites()" + e);
         }
     }
 

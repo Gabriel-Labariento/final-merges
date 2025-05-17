@@ -1,29 +1,42 @@
-import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.geom.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 
 public class PlayerBullet extends Attack{
     private double normalizedX;
     private double normalizedY;
+    public static final int WIDTH = 16;
+    public static final int HEIGHT = 16;
+    public static BufferedImage sprite;
+    static {
+        try {
+            sprite = ImageIO.read(PlayerBullet.class.getResourceAsStream("resources/Sprites/Attacks/playerbullet.png"));
+        } catch (IOException e) {
+            System.out.println("Exception in setSprites()" + e);
+        }
+    }
+
     
-    public PlayerBullet(Entity owner, int x, int y, double nX, double nY, int d){
+    public PlayerBullet(int cid, Entity entity, int x, int y, double nX, double nY, int d, boolean isFriendly){
         attackNum++;
         id = attackNum;
+        clientId = cid;
         identifier = NetworkProtocol.PLAYERBULLET;
-        this.owner = owner;
-        isFriendly = true;
+        owner = entity;
+        this.isFriendly = isFriendly;
         damage = d;
         //Temporary hitPoints allocation
-        width = 16;
-        height = 16;
+        width = WIDTH;
+        height = HEIGHT;
         worldX = x;
         worldY = y;
-        speed = 3;
+        speed = 4;
         normalizedX = nX;
         normalizedY = nY;
 
         //For checking attack duration
-        duration = 2000;
+        duration = 10000;
         setExpirationTime(duration);
 
         matchHitBoxBounds();
@@ -31,9 +44,7 @@ public class PlayerBullet extends Attack{
 
     @Override
     public void draw(Graphics2D g2d, int xOffset, int yOffset){
-        Rectangle2D.Double sprite = new Rectangle2D.Double(xOffset, yOffset, width, height);
-        g2d.setColor(Color.PINK);
-        g2d.fill(sprite);
+        g2d.drawImage(sprite, xOffset, yOffset, width, height, null);
     }
 
     @Override
@@ -47,8 +58,8 @@ public class PlayerBullet extends Attack{
     }
 
     private void moveBullet(){
-        worldX += (int) speed*normalizedX;
-        worldY += (int) speed*normalizedY;
+        worldX += speed*normalizedX;
+        worldY += speed*normalizedY;
         matchHitBoxBounds();
     }
 

@@ -25,10 +25,10 @@ public class ItemsHandler{
         AVAILABLEITEMS.put("Premium Cat Food++", 0);
         AVAILABLEITEMS.put("Goldfish", 0);
         AVAILABLEITEMS.put("Light Scarf", 0);
-        AVAILABLEITEMS.put("Thick Sweater", 0);
+        AVAILABLEITEMS.put("Thick Sweater", 100);
         AVAILABLEITEMS.put("Bag of Catnip", 0);
         AVAILABLEITEMS.put("Loud Bell",0);
-        AVAILABLEITEMS.put("Pringles Can", 100);
+        AVAILABLEITEMS.put("Pringles Can", 0);
         for (Integer dropChance: AVAILABLEITEMS.values()){
             dropChanceSum += dropChance;
         }

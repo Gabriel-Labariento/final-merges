@@ -1,15 +1,12 @@
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
-import javax.imageio.ImageIO;
 
-public class Room extends GameObject{
+public class Room extends GameObject implements Tileable{
     
     public static final int WIDTH_TILES = 45;
     public static final int HEIGHT_TILES = 33;
     private int roomId;
-    private int gameLevel;
     private int difficulty; // 0 => 3, easiest to hardest
     private boolean isStartRoom, isEndRoom, isClearedHandled, isCleared;
     private MobSpawner mobSpawner;
@@ -18,8 +15,8 @@ public class Room extends GameObject{
     private HashMap<String, Room> doors;
     private ArrayList<Door> doorsArrayList;
 
-    private BufferedImage backgroundImage;
-    private boolean backgroundLoaded;
+    int[][] loadedLayout;
+    
 
     /**
      * Creates a Room object with an ID, x and y coordinates, ArrayList of connections, and HashMap of doors.
@@ -27,13 +24,13 @@ public class Room extends GameObject{
      * @param x the x-coordinate of the room
      * @param y the y-coordinate of the room
      */
-    public Room(int roomId, int x, int y, int gameLevel){
+    public Room(int roomId, int x, int y){
         this.roomId = roomId;
         this.worldX = x;
         this.worldY = y;
         height = GameCanvas.TILESIZE * HEIGHT_TILES;
         width = GameCanvas.TILESIZE * WIDTH_TILES;
-        this.gameLevel = gameLevel;
+
         isStartRoom = false;
         isEndRoom = false;
         isClearedHandled = false;
@@ -42,7 +39,8 @@ public class Room extends GameObject{
         connections = new ArrayList<>();
         doors = new HashMap<>();
         doorsArrayList = new ArrayList<>();
-        backgroundLoaded = false;
+        tiles = new Tile[HEIGHT_TILES][WIDTH_TILES];
+        populateTiles();
     }
 
     /**
@@ -68,33 +66,35 @@ public class Room extends GameObject{
     }
 
     public void draw(Graphics2D g2d, int cameraX, int cameraY){
+
+        if (isStartRoom) {
+            g2d.setColor(Color.GREEN);
+        } else if (isEndRoom){
+            g2d.setColor(Color.RED);
+        } else {
+            switch (difficulty) {
+                case 0:
+                    g2d.setColor(Color.LIGHT_GRAY); break;
+                case 1:
+                    g2d.setColor(Color.WHITE); break;
+                case 2:
+                    g2d.setColor(Color.DARK_GRAY); break;
+                default:
+                    g2d.setColor(Color.BLACK);
+            }
+        }
+
         // Border
         g2d.drawRect(worldX - cameraX, worldY - cameraY, width, height);
-
-        loadBackgroundImage();
-        g2d.drawImage(backgroundImage, worldX - cameraX, worldY - cameraY, null);
         
     }
 
-    public void loadBackgroundImage(){
-        if (backgroundLoaded) return;
-        String path;
-        switch (gameLevel) {
-            case 0:
-                path = "resources/Object Layouts/Junkyard.png";
-                break;
-            case 1:
-                path = "resources/Object Layouts/Street.png";
-                break;
-            default:
-                throw new AssertionError();
+    @Override
+    public int[][] loadLayout(){
+        if (loadedLayout == null) {
+            loadedLayout = loadLayoutFromFile();
         }
-        try {
-            backgroundImage = ImageIO.read(getClass().getResourceAsStream(path));
-            backgroundLoaded = true;
-        } catch (IOException e) {
-            System.out.println("IOException in loadBackgroundImage() of Room class: " + e);
-        }
+        return loadedLayout;
     }
 
     @Override
@@ -108,6 +108,7 @@ public class Room extends GameObject{
 
     public int[][] loadLayoutFromFile() {
         int layout[][] = new int[HEIGHT_TILES][WIDTH_TILES];
+        int gameLevel = ServerMaster.getInstance().getGameLevel();
         // Check what type of object it is. TODO: MAKE PRETTIER
         String filePath = "resources/Object Layouts/baseLayout.txt";
         if (isEndRoom && gameLevel == 0) filePath = "resources/Object Layouts/ratKingRoomLayout.txt";
@@ -444,10 +445,6 @@ public class Room extends GameObject{
 
     public void setCleared(boolean isCleared) {
         this.isCleared = isCleared;
-    }
-
-    public int getGameLevel() {
-        return gameLevel;
     }
     
 }

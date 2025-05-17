@@ -3,38 +3,34 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 
-public class PlayerSmash extends Attack{
-    public static final int WIDTH = 80;
-    public static final int HEIGHT = 80;
+public class EnemySlash extends Attack{
+    public static final int HEIGHT = 56;
+    public static final int WIDTH = 56;
+    private static BufferedImage sprite;
 
-    public static BufferedImage sprite;
     static {
         try {
-            sprite = ImageIO.read(PlayerSmash.class.getResourceAsStream("resources/Sprites/Attacks/playersmash.png"));
+            BufferedImage img = ImageIO.read(EnemySlash.class.getResourceAsStream("resources/Sprites/SharedEnemy/enemyslash.png"));
+            sprite = img;
         } catch (IOException e) {
-            System.out.println("Exception in setSprites()" + e);
+            System.out.println("Exception in SpiderBullet setSprites()" + e);
         }
     }
 
-    public PlayerSmash(int cid, Entity entity, int x, int y, int d, boolean isFriendly){
+    public EnemySlash(Entity owner, int x, int y){
         attackNum++;
         id = attackNum;
-        clientId = cid;
-        identifier = NetworkProtocol.PLAYERSMASH;
-        owner = entity;
-        this.isFriendly = isFriendly;
-        damage = d;
+        identifier = NetworkProtocol.ENEMYSLASH;
+        this.owner = owner;
+        isFriendly = false;
+        damage = 1;
         width = WIDTH;
         height = HEIGHT;
         worldX = x;
         worldY = y;
 
-        //Temporary hitPoints allocation
-        hitPoints = 100;
-
-
         //For checking attack duration
-        duration = 800;
+        duration = 600;
         setExpirationTime(duration);
 
         matchHitBoxBounds();
@@ -58,5 +54,4 @@ public class PlayerSmash extends Attack{
     @Override
     public void updateEntity(ServerMaster gsm) {
     }
-
 }

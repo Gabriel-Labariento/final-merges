@@ -9,44 +9,8 @@ public class ClientMaster {
     private int xpBarPercent;
     private int userLvl;
     private String heldItemIdentifier;
-    private static final HashMap<String, String> IDENTIFIERTONAME = new HashMap<>();
-    static {
-        //Initiliaze IDENTIFIERTONAME hashmap using static block
-        IDENTIFIERTONAME.put(NetworkProtocol.REDFISH, "Redfish");
-        IDENTIFIERTONAME.put(NetworkProtocol.CATTREAT, "Cat Treat");
-        IDENTIFIERTONAME.put(NetworkProtocol.MILK, "Milk");
-        IDENTIFIERTONAME.put(NetworkProtocol.PREMIUMCATFOOD, "Premium Cat Food++");
-        IDENTIFIERTONAME.put(NetworkProtocol.GOLDFISH, "Goldfish");
-        IDENTIFIERTONAME.put(NetworkProtocol.LIGHTSCARF, "Light Scarf");
-        IDENTIFIERTONAME.put(NetworkProtocol.THICKSWEATER, "Thick Sweater");
-        IDENTIFIERTONAME.put(NetworkProtocol.BAGOFCATNIP, "Bag of Catnip");
-        IDENTIFIERTONAME.put(NetworkProtocol.LOUDBELL, "Loud Bell");
-        IDENTIFIERTONAME.put(NetworkProtocol.PRINGLESCAN, "Pringles Can");
-        IDENTIFIERTONAME.put(NetworkProtocol.HEAVYCAT, "HeavyCat");
-        IDENTIFIERTONAME.put(NetworkProtocol.FASTCAT, "FastCat");
-        IDENTIFIERTONAME.put(NetworkProtocol.GUNCAT, "GunCat");
-        IDENTIFIERTONAME.put(NetworkProtocol.PLAYERSMASH, "PlayerSmash");
-        IDENTIFIERTONAME.put(NetworkProtocol.PLAYERSLASH, "PlayerSlash");
-        IDENTIFIERTONAME.put(NetworkProtocol.PLAYERBULLET, "PlayerBullet");
-        IDENTIFIERTONAME.put(NetworkProtocol.RAT, "Rat");
-        IDENTIFIERTONAME.put(NetworkProtocol.ENEMYBITE, "EnemyBite");
-        IDENTIFIERTONAME.put(NetworkProtocol.ENEMYBARK, "EnemyBark");
-        IDENTIFIERTONAME.put(NetworkProtocol.RATKING, "RatKing");
-        IDENTIFIERTONAME.put(NetworkProtocol.SNAKE, "Snake");
-        IDENTIFIERTONAME.put(NetworkProtocol.SNAKELET, "Snakelet");
-        IDENTIFIERTONAME.put(NetworkProtocol.SPIDER, "Spider");
-        IDENTIFIERTONAME.put(NetworkProtocol.SPIDERBULLET, "SpiderBullet");
-        IDENTIFIERTONAME.put(NetworkProtocol.SNAKEBULLET, "SnakeBullet");
-        IDENTIFIERTONAME.put(NetworkProtocol.COCKROACH, "Cockroach");
-        IDENTIFIERTONAME.put(NetworkProtocol.SMALLDOG, "SmallDog");
-        IDENTIFIERTONAME.put(NetworkProtocol.BUNNY, "Bunny");
-        IDENTIFIERTONAME.put(NetworkProtocol.FROG, "Frog");
-        IDENTIFIERTONAME.put(NetworkProtocol.ENEMYSMASH, "EnemySmash");
-        IDENTIFIERTONAME.put(NetworkProtocol.BEE, "Bee");
-        IDENTIFIERTONAME.put(NetworkProtocol.FERALDOG, "FeralDog");
-        IDENTIFIERTONAME.put(NetworkProtocol.TURTLE, "Turtle");
-
-    }
+    private boolean isGameOver;
+    private int bossHPPercent;
 
     public ClientMaster(){
         userPlayer = null;
@@ -61,6 +25,14 @@ public class ClientMaster {
 
     public int getXPBarPercent(){
         return xpBarPercent;
+    }
+
+    public int getBossHPPercent(){
+        return bossHPPercent;
+    }
+
+    public void setBossHPBarPercemt(int i){
+        bossHPPercent = i;
     }
 
     public void setUserLvl(int lvl){
@@ -89,81 +61,69 @@ public class ClientMaster {
 
 
     public Entity getEntity(String identifier, int id, int x, int y){
-        String name = IDENTIFIERTONAME.get(identifier);
-        if (name == null) return null;
-        switch (name){
-            case "HeavyCat":
-                return new HeavyCat(id, x, y);
-            case "FastCat":
-                return new FastCat(id, x, y);
-            case "GunCat":
-                return new GunCat(id, x, y);
-            case "Redfish":
-                return new RedFish(x, y);
-            case "Cat Treat":
-                return new CatTreat(x, y);
-            case "Milk":
-                return new Milk(x, y);
-            case "Premium Cat Food++":
-                return new PremiumCatFood(x, y);
-            case "Goldfish":
-                return new Goldfish(x, y);
-            case "Light Scarf":
-                return new LightScarf(x, y);
-            case "Thick Sweater":
-                return new ThickSweater(x, y);
-            case "Bag of Catnip":
-                return new BagOfCatnip(x, y);
-            case "Loud Bell":
-                return new LoudBell(x, y);
-            case "Pringles Can":
-                return new PringlesCan(x, y);
-            case "Rat":
-                return new Rat(x, y);
-            case "EnemyBite":
-                return new EnemyBite(null, x, y);
-            case "RatKing":
-                return new RatKing(x, y);
-            case "Snake":
-                return new Snake(x, y);
-            case "Snakelet":
-                return new Snakelet(x, y);
-            case "Spider":
-                return new Spider(x, y);
-            case "Cockroach":
-                return new Cockroach(x, y);
-            case "SmallDog":
-                return new SmallDog(x, y);
-            case "FeralDog":
-                return new FeralDog(x, y);
-            case "Bunny":
-                return new Bunny(x, y);
-            case "Bee":
-                return new Bee(x, y);
-            case "Frog":
-                return new Frog(x, y);
-            case "Turtle":
-                return new Turtle(x, y);
-            case "EnemySmash":
-                return new EnemySmash(null, x, y);
-            case "EnemyBark":
-                return new EnemyBark(null, x, y);
-            case "PlayerSlash":
-                return new PlayerSlash(id, null, x, y, 0, false);
-            case "PlayerSmash":
-                return new PlayerSmash(id, null, x, y, 0, false);
-            case "PlayerBullet":
-                return new PlayerBullet(null, x, y, 0, 0, 0);
-            case "SpiderBullet":
-                return new SpiderBullet(null, x, y, 0, 0);
-            case "SnakeBullet":
-                return new SnakeBullet(null, x, y, 0, 0);
-            default:
-                return null;
-        }
+        //Player entities
+        if (identifier.equals( NetworkProtocol.HEAVYCAT)) return new HeavyCat(id, x, y);
+        else if (identifier.equals( NetworkProtocol.FASTCAT)) return new FastCat(id, x, y);
+        else if (identifier.equals( NetworkProtocol.GUNCAT)) return new GunCat(id, x, y);
+
+        //Item entities
+        else if (identifier.equals( NetworkProtocol.REDFISH)) return new RedFish(x, y);
+        else if (identifier.equals( NetworkProtocol.CATTREAT)) return new CatTreat(x, y);
+        else if (identifier.equals( NetworkProtocol.MILK)) return new Milk(x, y);
+        else if (identifier.equals( NetworkProtocol.PREMIUMCATFOOD)) return new PremiumCatFood(x, y);
+        else if (identifier.equals( NetworkProtocol.GOLDFISH)) return new Goldfish(x, y);
+        else if (identifier.equals( NetworkProtocol.LIGHTSCARF)) return new LightScarf(x, y);
+        else if (identifier.equals( NetworkProtocol.THICKSWEATER)) return new ThickSweater(x, y);
+        else if (identifier.equals( NetworkProtocol.BAGOFCATNIP)) return new BagOfCatnip(x, y);
+        else if (identifier.equals( NetworkProtocol.LOUDBELL)) return new LoudBell(x, y);
+        else if (identifier.equals( NetworkProtocol.PRINGLESCAN)) return new PringlesCan(x,y);
+
+        //Enemy entities
+        //Normal 
+        else if (identifier.equals( NetworkProtocol.SPIDER)) return new RatKing(x, y);
+        else if (identifier.equals( NetworkProtocol.COCKROACH)) return new RatKing(x, y);
+        else if (identifier.equals( NetworkProtocol.RAT)) return new Rat(x, y);
+        else if (identifier.equals( NetworkProtocol.SMALLDOG)) return new Snakelet(x, y);
+        else if (identifier.equals( NetworkProtocol.BUNNY)) return new BagOfCatnip(x, y);
+        else if (identifier.equals( NetworkProtocol.FROG)) return new PringlesCan(x,y);
+        else if (identifier.equals( NetworkProtocol.BEE)) return new RatKing(x, y);
+        else if (identifier.equals( NetworkProtocol.SNAKELET)) return new Snakelet(x, y);
+        else if (identifier.equals( NetworkProtocol.CLEANINGBOT)) return new CleaningRobot(x, y);
+        else if (identifier.equals( NetworkProtocol.SECURITYBOT)) return new SecurityBot(x, y);
+        else if (identifier.equals( NetworkProtocol.FERALRAT)) return new FeralRat(x,y);
+        else if (identifier.equals( NetworkProtocol.SCREAMERRAT)) return new ScreamerRat(x, y);
+        else if (identifier.equals( NetworkProtocol.MUTATEDANCHOVY)) return new MutatedAnchovy(x, y);
+        else if (identifier.equals( NetworkProtocol.MUTATEDARCHERFISH)) return new MutatedArcherfish(x, y);
+        else if (identifier.equals( NetworkProtocol.MUTATEDPUFFERFISH)) return new MutatedPufferfish(x, y);
+
+        //Bosses
+        else if (identifier.equals( NetworkProtocol.RATKING)) return new RatKing(x,y);
+        else if (identifier.equals( NetworkProtocol.FERALDOG)) return new RatKing(x, y);
+        else if (identifier.equals( NetworkProtocol.TURTLE)) return new BagOfCatnip(x, y);
+        else if (identifier.equals( NetworkProtocol.SNAKE)) return new LoudBell(x, y);
+        else if (identifier.equals( NetworkProtocol.ADULTCAT)) return new AdultCat(x,y);
+        else if (identifier.equals( NetworkProtocol.CONJOINEDRATS)) return new ConjoinedRats(x, y);
+        else if (identifier.equals( NetworkProtocol.FISHMONSTER)) return new FishMonster(x, y);
+
+        //Attack entities
+        else if (identifier.equals( NetworkProtocol.PLAYERSMASH)) 
+            return new PlayerSmash(id, null, x, y, 0, false);
+        else if (identifier.equals( NetworkProtocol.PLAYERSLASH)) 
+            return new PlayerSlash(id, null, x, y, 0, false);
+        else if (identifier.equals( NetworkProtocol.PLAYERBULLET)) 
+            return new PlayerBullet(id, null, x, y, 0, 0, 0, false);
+        else if (identifier.equals(NetworkProtocol.SPIDERBULLET))
+            return new SpiderBullet(null, x, y, 0, 0);
+        else if (identifier.equals(NetworkProtocol.LASERBULLET))
+            return new LaserBullet(null, x, y, 0, 0);
+        else if (identifier.equals(NetworkProtocol.ENEMYBITE))
+            return new EnemyBite(null, x, y);
+        else if (identifier.equals(NetworkProtocol.ENEMYSLASH))
+            return new EnemySlash(null, x, y);
+        else return null;
     }
 
-    public void loadEntity(String identifier, int id, int x, int y, int roomId, int sprite, int zIndex){
+    public void loadEntity(String identifier, int id, int x, int y, int roomId, int sprite){
         // System.out.println("Loading entity " + identifier + " " + name + "at " + x + ", " + y);
         // if (name == null) System.out.println("Warning: unknown identity identifier " + identifier);
         Entity e = getEntity(identifier, id, x, y);
@@ -172,7 +132,6 @@ public class ClientMaster {
             e.setCurrSprite(sprite);
             e.matchHitBoxBounds();
             e.setCurrentRoom(getRoomById(roomId));
-            e.setzIndex(zIndex);
             entities.add(e);
         }    
     }
@@ -208,5 +167,13 @@ public class ClientMaster {
 
     public Room getRoomById(int id) {
         return allRooms.get(id);
+    }
+
+    public void setIsGameOver(boolean b){
+        isGameOver = b;
+    }
+
+    public boolean getIsGameOver(){
+        return isGameOver;
     }
 }

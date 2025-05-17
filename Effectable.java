@@ -1,5 +1,7 @@
 public interface Effectable {
-    public void addStatusffect(StatusEffect se);
+    public void ApplyEffect();
 
-    public void updateStatusEffects();
+    public void RemoveEffect();
+
+    public void HandleEffect();
 }

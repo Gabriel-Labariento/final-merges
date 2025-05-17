@@ -57,7 +57,6 @@ public class GameServer {
                     // System.out.println("called update on gsm");
                 } catch (Exception e) {
                     System.err.println("Exception in game loop update():" + e);
-                    e.printStackTrace();
                 }
 
                try {

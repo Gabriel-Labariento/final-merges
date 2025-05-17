@@ -1,8 +1,10 @@
 public abstract class GameObject {
     protected int worldX, worldY, height, width;
     protected int HEIGHT_TILES, WIDTH_TILES;
-    protected int zIndex;
+    protected Tile[][] tiles;
+    protected int[][] tileLayout;
     int[] hitBoxBounds;
+    protected int zIndex;
 
     public abstract void matchHitBoxBounds();
 
@@ -27,7 +29,7 @@ public abstract class GameObject {
      * @return integer value of the object's center x coordinate
      */
     public int getCenterX() {
-        return ( (int) (worldX + width / 2));
+        return ( (int) (worldX + (width / 2)));
     }
 
     /**
@@ -35,7 +37,7 @@ public abstract class GameObject {
      * @return integer value of the object's center y coordinate
      */
     public int getCenterY() {
-        return ( (int) (worldY + height / 2));
+        return ( (int) (worldY + (height / 2)));
     }
 
     /**
@@ -46,12 +48,20 @@ public abstract class GameObject {
         return height;
     }
 
+    public void setHeight(int h){
+        height = h;
+    }
+
     /**
      * Gets the object's width
      * @return an integer which is the object's width 
      */
     public int getWidth() {
         return width;
+    }
+
+    public void setWidth(int w) {
+        width = w;
     }
 
     /**
@@ -85,6 +95,27 @@ public abstract class GameObject {
             default:
                 throw new AssertionError("Assertion in getOppositeDirection() method of the Room.");
         }
+    }
+
+    /**
+     * Populates the 2D array Tile field of the object with new Tile objects.
+     */
+    public void populateTiles(){
+        tiles = new Tile[HEIGHT_TILES][WIDTH_TILES];
+
+        for (int i = 0; i < HEIGHT_TILES; i++) {
+            for (int j = 0; j < WIDTH_TILES; j++) {
+                tiles[i][j] = new Tile();
+            }
+        }
+    }
+
+    public Tile[][] getTiles() {
+        return tiles;
+    }
+
+    public int[][] getTileLayout() {
+        return tileLayout;
     }
 
     public int[] getHitBoxBounds() {

@@ -3,7 +3,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 
- public class SpiderBullet extends Attack {
+ public class LaserBullet extends Attack {
         public static final int HEIGHT = 16;
         public static final int WIDTH = 16;
         double normalizedX, normalizedY;
@@ -11,31 +11,30 @@ import javax.imageio.ImageIO;
 
         static {
             try {
-                BufferedImage img = ImageIO.read(SpiderBullet.class.getResourceAsStream("resources/Sprites/Spider/spiderbullet.png"));
+                BufferedImage img = ImageIO.read(LaserBullet.class.getResourceAsStream("resources/Sprites/Attacks/laserbullet.png"));
                 sprite = img;
             } catch (IOException e) {
-                System.out.println("Exception in SpiderBullet setSprites()" + e);
+                System.out.println("Exception in setSprites()" + e);
             }
         }
 
-        public SpiderBullet(Entity owner, int x, int y, double nX, double nY){
+        public LaserBullet(Entity owner, int x, int y, double nX, double nY){
             attackNum++;
             id = attackNum;
-            identifier = NetworkProtocol.SPIDERBULLET;
+            identifier = NetworkProtocol.LASERBULLET;
             this.owner = owner;
             isFriendly = false;
             damage = 1;
-            //Temporary hitPoints allocation
             width = 16;
             height = 16;
             worldX = x;
             worldY = y;
-            speed = 2; // Note: Do not make equal to 1. When multiplied with floats, becomes 0.
+            speed = 4; // Note: Do not make equal to 1. When multiplied with floats, becomes 0.
             normalizedX = nX;
             normalizedY = nY;
 
             //For checking attack duration
-            duration = 2000;
+            duration = 10000;
             setExpirationTime(duration);
 
             matchHitBoxBounds();

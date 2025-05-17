@@ -14,7 +14,13 @@ public abstract class Entity extends GameObject {
     public boolean isMaxHealthSet;
     protected int currSprite;
     protected int damage;
+    protected boolean isAttacking;
+    protected int attackFrameDuration;
     public Room currentRoom;
+    protected static final int SPRITE_FRAME_DURATION = 200;
+    protected long lastSpriteUpdate;
+    protected long lastAttackTime;
+    protected int attackCDDuration;
 
     public void draw(Graphics2D g2d, int xOffset, int yOffset){}
 
@@ -35,12 +41,31 @@ public abstract class Entity extends GameObject {
     public void setDefense(int d){
         defense = d;
     }
+
+    public int getAttackCDDuration(){
+        return attackCDDuration;
+    }
+
+    public void setAttackCDDuration(int duration){
+        attackCDDuration = duration;
+    }
+
+    public int getAttackFrameDuration(){
+        return attackFrameDuration;
+    }
+
+    public void setAttackFrameDuration(int a){
+        attackFrameDuration = a;
+    }
+
+    public boolean getIsAttacking(){
+        return isAttacking;
+    }
+
+    public void setIsAttacking(boolean b){
+        isAttacking = b;
+    }
     
-    /**
-     * Returns a string containing the entity data in the format:
-     * identifier,id,x,y,roomId,sprite,zIndex
-     * for parsing
-     */
     public String getAssetData(boolean isUserPlayer){
         StringBuilder sb = new StringBuilder();
         sb.append(identifier).append(NetworkProtocol.SUB_DELIMITER)
@@ -80,6 +105,12 @@ public abstract class Entity extends GameObject {
         worldY = y;
 
         matchHitBoxBounds();
+    }
+
+    public void runAttackFrames(){
+        //TEMPORARY
+        
+        
     }
 
     /**
@@ -166,8 +197,6 @@ public abstract class Entity extends GameObject {
     }
 
     public void setSpeed(int s){
-        //Set a hard limit
-        if(s < 2) s = 2;
         speed = s;
     }
 

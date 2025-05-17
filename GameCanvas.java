@@ -1,18 +1,36 @@
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.concurrent.*;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 
 public class GameCanvas extends JComponent {
     public static final int TILESIZE = 16;
     private static final int REFRESHINTERVAL = 16;
-    private final int width, height;
+    private int width, height;
     private GameClient gameClient;
     private ClientMaster clientMaster;
     private ScheduledExecutorService renderLoopScheduler;
     private ScheduledExecutorService sendInputsScheduler;
+    private TileManager tileManager;
     public PlayerUI playerUI;
+    private float screenOpacity;
+
+    private static BufferedImage[] sprites;
+
+    static {
+        setSprites();
+    }
+
+    private static void setSprites() {
+        try {
+            BufferedImage gameOverScreen = ImageIO.read(GameCanvas.class.getResourceAsStream("resources/Misc/gameOver.png"));
+            sprites = new BufferedImage[] {gameOverScreen};
+        } catch (IOException e) {
+            System.out.println("Exception in setSprites()" + e);
+        }
+    }
 
     public GameCanvas(int width, int height){
         this.width = width;
@@ -22,6 +40,7 @@ public class GameCanvas extends JComponent {
         clientMaster = new ClientMaster();
         gameClient = new GameClient(clientMaster);
         setPreferredSize(new Dimension(width, height));
+        tileManager = new TileManager();
         playerUI = new PlayerUI();
     }
 
@@ -36,8 +55,15 @@ public class GameCanvas extends JComponent {
 
         //Load game menu ui
         Player userPlayer = clientMaster.getUserPlayer();
+        if (clientMaster.getIsGameOver()){
+            if (screenOpacity < 1f){
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, screenOpacity));
+                screenOpacity += 0.005f;
+            } 
+            g2d.drawImage(sprites[0], 0, 0, width, height, null);
 
-        if ( (userPlayer == null) || (clientMaster.getCurrentRoom() == null) ){
+        }
+        else if ( (userPlayer == null) || (clientMaster.getCurrentRoom() == null) ){
             //Temporary Background
             g2d.setColor(Color.BLACK);
             g2d.fillRect(0, 0, width, height);
@@ -49,7 +75,7 @@ public class GameCanvas extends JComponent {
             g2d.setColor(Color.BLACK);
             g2d.fillRect(0, 0, width, height);
 
-            int scaleFactor = 1;
+            int scaleFactor = 2;
             g2d.scale(scaleFactor, scaleFactor);
             
             int screenX = (800/ (2 * scaleFactor) - userPlayer.getWidth() / (2 * scaleFactor));
@@ -59,20 +85,18 @@ public class GameCanvas extends JComponent {
             int cameraY = userPlayer.getWorldY() - screenY;
 
             Room currentRoom = clientMaster.getCurrentRoom();
+            tileManager.drawTiledObject(g2d, currentRoom, cameraX, cameraY);
             currentRoom.draw(g2d, cameraX, cameraY);
             
             // Draw room doors
             for (Door door : currentRoom.getDoorsArrayList()) {
                 door.draw(g2d, cameraX, cameraY);
+                // tileManager.drawTiledObject(g2d, door, cameraX, cameraY);
             }
 
             // Draw enemies, projectiles, other players
-
             synchronized (clientMaster.getEntities()) {
-                ArrayList<Entity> sortedEntitiesByZ = new ArrayList<>(clientMaster.getEntities());
-                sortedEntitiesByZ.sort(Comparator.comparingInt(Entity::getZIndex));
-
-                for (Entity entity : sortedEntitiesByZ)    
+                for (Entity entity : clientMaster.getEntities())
                     entity.draw(g2d, entity.getWorldX() - userPlayer.getWorldX() + screenX, entity.getWorldY()- userPlayer.getWorldY() + screenY);    
             }
             

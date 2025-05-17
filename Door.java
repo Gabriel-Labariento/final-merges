@@ -1,6 +1,6 @@
 import java.awt.Graphics2D;
 
-public class Door extends GameObject {
+public class Door extends GameObject implements Tileable {
     private int id;
     public static final int HEIGHT_TILES = 2;
     public static final int WIDTH_TILES = 2;
@@ -8,14 +8,21 @@ public class Door extends GameObject {
     private Room roomA, roomB; // The door only appears on roomA, but is connected to another door in roomB 
     private boolean isOpen, isExitToNewDungeon;
     
+    
+
     private static int doorCount = 0;
-   
+    private static final int[][] CLOSED_DOOR_LAYOUT = {{16,17}, {18,19}};
+    private static final int[][] OPEN_DOOR_LAYOUT = {{20,21}, {22,23}};
+    
+
     public Door(int x, int y, String direction, Room roomA, Room roomB){
         this.id = doorCount++;
         worldX = x;
         worldY = y;
         height = GameCanvas.TILESIZE * HEIGHT_TILES;
         width = GameCanvas.TILESIZE * WIDTH_TILES;
+        tiles = new Tile[HEIGHT_TILES][WIDTH_TILES];
+        populateTiles();
         isOpen = true;
         isExitToNewDungeon = false;
         this.direction = direction;
@@ -48,22 +55,24 @@ public class Door extends GameObject {
      * @return a string with the format D:doorId,x,y,direction,roomAId,roomBId
      */
     public String serialize(){
-
-        int roomAID = (roomA == null) ? -1 : roomA.getRoomId();
-        int roomBID = (roomB == null) ? -1 : roomB.getRoomId();
-
         StringBuilder sb = new StringBuilder();
         sb.append(NetworkProtocol.DOOR)
         .append(id).append(NetworkProtocol.SUB_DELIMITER)
         .append(worldX).append(NetworkProtocol.SUB_DELIMITER)
         .append(worldY).append(NetworkProtocol.SUB_DELIMITER)
         .append(direction).append(NetworkProtocol.SUB_DELIMITER)
-        .append(roomAID).append(NetworkProtocol.SUB_DELIMITER)
-        .append(roomBID);
+        .append(roomA.getRoomId()).append(NetworkProtocol.SUB_DELIMITER)
+        .append(roomB.getRoomId());
 
         return sb.toString();
     }
 
+    @Override
+    public int[][] loadLayout(){
+        return (isOpen) ? OPEN_DOOR_LAYOUT : CLOSED_DOOR_LAYOUT;
+    }
+
+    
     public String getDirection() {
         return direction;
     }
